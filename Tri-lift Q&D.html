@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 TRS Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the orange and black theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000; /* Black background */
+            color: #fff; /* White text */
+        }
+        .container {
+            max-width: 900px;
+        }
+        .section-header {
+            background-color: #ea580c; /* Orange-600 */
+            color: #1a202c; /* Dark text for contrast on orange */
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .btn-primary {
+            background-color: #ea580c; /* Orange-600 */
+            color: #1a202c; /* Dark text for contrast on orange */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover {
+            background-color: #c2410c; /* Orange-700 */
+        }
+        .btn-secondary {
+            background-color: #333; /* Dark gray */
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary:hover {
+            background-color: #555;
+        }
+        .btn-toggle {
+            background-color: #333;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-toggle.active {
+            background-color: #ea580c;
+            color: #1a202c;
+        }
+        .recovery-status-display {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            transition: background-color 0.3s ease-in-out;
+        }
+        .recovery-green { background-color: #22c55e; } /* Green-500 */
+        .recovery-yellow { background-color: #eab308; } /* Yellow-500 */
+        .recovery-red { background-color: #ef4444; } /* Red-500 */
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.7); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #1a202c; /* Dark gray */
+            margin: auto;
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .timetable-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .timetable-table th, .timetable-table td {
+            border: 1px solid #333;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .timetable-table th {
+            background-color: #ea580c;
+            color: #1a202c;
+            font-weight: bold;
+        }
+        .timetable-table tr:nth-child(even) {
+            background-color: #1a202c;
+        }
+        .timetable-table tr:hover {
+            background-color: #333;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container mx-auto p-6 bg-black rounded-lg shadow-lg">
+        <h1 class="text-4xl font-extrabold text-center mb-8 text-orange-500">
+            🧠 TRS Dashboard: ADAPT. RECOVER. MASTER.
+        </h1>
+
+        <!-- Modal for messages -->
+        <div id="messageModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal()">&times;</span>
+                <p id="modalMessage" class="text-white text-lg"></p>
+                <button class="btn-primary mt-6" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+
+        <!-- Overview & Daily Readiness -->
+        <div class="mb-8 p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">Overview & Daily Readiness</div>
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                <div class="flex flex-col items-center">
+                    <div id="recoveryStatusDisplay" class="recovery-status-display">
+                        Select Status
+                    </div>
+                    <p id="recoveryStatusText" class="mt-3 text-lg font-semibold"></p>
+                </div>
+                <div class="flex flex-col space-y-3">
+                    <label for="recoverySelect" class="text-lg font-semibold">Today's Recovery Status:</label>
+                    <select id="recoverySelect" class="p-3 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="none">Select...</option>
+                        <option value="green">Green</option>
+                        <option value="yellow">Yellow</option>
+                        <option value="red">Red</option>
+                    </select>
+                    <button id="getRecoveryTipBtn" class="btn-primary mt-4">✨ Get Recovery Tip</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Core Strength Training (Tactical Periodisation Block) -->
+        <div class="mb-8 p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">Strength Training Protocol</div>
+            <div class="flex justify-center mb-6 space-x-4">
+                <button id="coreStrengthModeBtn" class="btn-toggle active">Core Strength</button>
+                <button id="qdProtocolModeBtn" class="btn-toggle">Q&D Tri-Lift Protocol</button>
+            </div>
+
+            <!-- Core Strength Mode -->
+            <div id="coreStrengthMode" class="strength-mode-content">
+                <div class="flex flex-col md:flex-row items-center justify-between mb-6 space-y-4 md:space-y-0">
+                    <div class="flex flex-col items-center">
+                        <p class="text-orange-500 text-2xl font-bold" id="currentWeekDisplay">Week 1</p>
+                        <p class="text-white text-lg" id="loadTypeDisplay">Heavy (~80% of 5RM)</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="prevWeekBtn" class="btn-secondary">&larr; Previous Week</button>
+                        <button id="nextWeekBtn" class="btn-secondary">Next Week &rarr;</button>
+                    </div>
+                </div>
+
+                <div class="mb-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                    <button id="rollDiceBtn" class="btn-primary">Roll Dice for Reps!</button>
+                    <div class="text-center">
+                        <p class="text-lg">Dice Roll: <span id="diceRollResult" class="font-bold text-orange-400">N/A</span></p>
+                        <p class="text-2xl font-bold mt-2">Total Reps per Lift: <span id="totalRepsDisplay" class="text-orange-500">N/A</span></p>
+                    </div>
+                </div>
+
+                <div id="strengthSessionDetails" class="mt-6 p-4 bg-gray-800 rounded-lg" style="display: none;">
+                    <h3 class="text-xl font-semibold mb-3 text-orange-400">Today's Strength Session:</h3>
+                    <p id="strengthWarning" class="text-red-400 mb-4 font-semibold"></p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">Upper Body Power:</h4>
+                            <p>Snatch OR Viking Press OR Clean Step Press</p>
+                            <p class="text-sm text-gray-400 mt-2">Recommended Set/Rep Schemes:</p>
+                            <ul id="upperBodyReps" class="list-disc list-inside text-gray-300"></ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">Pull:</h4>
+                            <p>Pull-up OR Chin-up (Weighted or Bodyweight)</p>
+                            <p class="text-sm text-gray-400 mt-2">Recommended Set/Rep Schemes:</p>
+                            <ul id="pullReps" class="list-disc list-inside text-gray-300"></ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">Legs:</h4>
+                            <p>Bulgarian Split Squat</p>
+                            <p class="text-sm text-gray-400 mt-2">Recommended Set/Rep Schemes:</p>
+                            <ul id="legsReps" class="list-disc list-inside text-gray-300"></ul>
+                        </div>
+                    </div>
+                </div>
+                <p id="coreStrengthSkippedMessage" class="text-red-500 font-bold text-center mt-4" style="display: none;">
+                    🚫 Strength Session Skipped/Delayed - Focus on Recovery!
+                </p>
+            </div>
+
+            <!-- Q&D Protocol Mode -->
+            <div id="qdProtocolMode" class="strength-mode-content" style="display: none;">
+                <div class="mb-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                    <button id="rollQDDiceBtn" class="btn-primary">Roll Dice for Q&D Volume!</button>
+                    <div class="text-center">
+                        <p class="text-lg">Dice Roll: <span id="qdDiceRollResult" class="font-bold text-orange-400">N/A</span></p>
+                        <p class="text-2xl font-bold mt-2">Series per Lift: <span id="qdSeriesDisplay" class="text-orange-500">N/A</span></p>
+                        <p class="text-lg mt-1">Approx. Total Session Time: <span id="qdTotalTimeDisplay" class="font-bold text-orange-400">N/A</span></p>
+                    </div>
+                </div>
+
+                <div id="qdSessionDetails" class="mt-6 p-4 bg-gray-800 rounded-lg" style="display: none;">
+                    <h3 class="text-xl font-semibold mb-3 text-orange-400">Today's Q&D Tri-Lift Session:</h3>
+                    <p id="qdStrengthWarning" class="text-red-400 mb-4 font-semibold"></p>
+
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">Lift 1: Upper Push (Snatch / Viking / Clean Step Press)</h4>
+                            <p class="text-sm text-gray-400">Alternate arms each series.</p>
+                            <p class="text-sm text-gray-400 mt-2">Each series = 20 total reps (5 reps every 30s x 4 sets OR 10 reps on the minute x 2 sets)</p>
+                            <p class="text-sm text-gray-400 mt-1">Rest after a series = remaining time before next minute + 1 extra minute.</p>
+                            <p class="text-sm text-gray-400 mt-1">Rest 2 mins after completing all series for Lift 1.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">Lift 2: Pull-up / Chin-up</h4>
+                            <p class="text-sm text-gray-400">Alternate grip if desired.</p>
+                            <p class="text-sm text-gray-400 mt-2">Each series = 20 total reps (5 reps every 30s x 4 sets OR 10 reps on the minute x 2 sets)</p>
+                            <p class="text-sm text-gray-400 mt-1">Rest after a series = remaining time before next minute + 1 extra minute.</p>
+                            <p class="text-sm text-gray-400 mt-1">Rest 2 mins after completing all series for Lift 2.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">Lift 3: Bulgarian Split Squat</h4>
+                            <p class="text-sm text-gray-400">L/R split or alternate reps.</p>
+                            <p class="text-sm text-gray-400 mt-2">Each series = 20 total reps (5 reps every 30s x 4 sets OR 10 reps on the minute x 2 sets)</p>
+                            <p class="text-sm text-gray-400 mt-1">Rest after a series = remaining time before next minute + 1 extra minute.</p>
+                        </div>
+                    </div>
+                </div>
+                <p id="qdSkippedMessage" class="text-red-500 font-bold text-center mt-4" style="display: none;">
+                    🚫 Q&D Tri-Lift Session Skipped/Delayed - Focus on Recovery!
+                </p>
+            </div>
+        </div>
+
+        <!-- Conditioning Rules -->
+        <div class="mb-8 p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">Conditioning Rules</div>
+            <p id="conditioningWarning" class="text-red-400 mb-4 font-semibold"></p>
+            <div class="mb-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                <button id="rollConditioningDiceBtn" class="btn-primary">Roll Dice for Conditioning!</button>
+                <div class="text-center">
+                    <p class="text-lg">Dice Roll: <span id="conditioningDiceResult" class="font-bold text-orange-400">N/A</span></p>
+                    <p class="text-2xl font-bold mt-2">Today's Conditioning: <span id="selectedConditioning" class="text-orange-500">N/A</span></p>
+                </div>
+            </div>
+            <div id="conditioningOptions" class="flex flex-col space-y-3">
+                <!-- Options will be dynamically loaded here -->
+            </div>
+            <p id="conditioningSkippedMessage" class="text-red-500 font-bold text-center mt-4" style="display: none;">
+                🚫 Conditioning Skipped - Focus on Walking/Stretching!
+            </p>
+        </div>
+
+        <!-- Accessory Rules -->
+        <div class="mb-8 p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">Accessory Rules</div>
+            <p id="accessoryWarning" class="text-red-400 mb-4 font-semibold"></p>
+            <div id="accessoryCheckboxes" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <label class="flex items-center space-x-2 text-white">
+                    <input type="checkbox" name="accessory" value="The Big 3 (McGill)" class="form-checkbox h-5 w-5 text-orange-500 rounded focus:ring-orange-500 bg-gray-700 border-gray-600">
+                    <span>The Big 3 (McGill)</span>
+                </label>
+                <label class="flex items-center space-x-2 text-white">
+                    <input type="checkbox" name="accessory" value="Clock Stoppers (Reflexive Control)" class="form-checkbox h-5 w-5 text-orange-500 rounded focus:ring-orange-500 bg-gray-700 border-gray-600">
+                    <span>Clock Stoppers (Reflexive Control)</span>
+                </label>
+                <label class="flex items-center space-x-2 text-white">
+                    <input type="checkbox" name="accessory" value="Meel Lu Raises (Shoulders/Posture)" class="form-checkbox h-5 w-5 text-orange-500 rounded focus:ring-orange-500 bg-gray-700 border-gray-600">
+                    <span>Meel Lu Raises (Shoulders/Posture)</span>
+                </label>
+                <label class="flex items-center space-x-2 text-white">
+                    <input type="checkbox" name="accessory" value="Poliquin Steps (Knee rehab)" class="form-checkbox h-5 w-5 text-orange-500 rounded focus:ring-orange-500 bg-gray-700 border-gray-600">
+                    <span>Poliquin Steps (Knee rehab)</span>
+                </label>
+                <label class="flex items-center space-x-2 text-white">
+                    <input type="checkbox" name="accessory" value="Low Plyos (Hop to stick, Pogo jumps)" class="form-checkbox h-5 w-5 text-orange-500 rounded focus:ring-orange-500 bg-gray-700 border-gray-600">
+                    <span>Low Plyos (Hop to stick, Pogo jumps)</span>
+                </label>
+            </div>
+            <p class="text-orange-400 text-sm">
+                Perform 2-3 times per week as needed: Wednesdays, post-lift, or after conditioning.
+            </p>
+            <p id="accessorySkippedMessage" class="text-red-500 font-bold text-center mt-4" style="display: none;">
+                🚫 No Accessories on Red Recovery Days.
+            </p>
+        </div>
+
+        <!-- BJJ Integration Rules -->
+        <div class="mb-8 p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">BJJ Integration Rules</div>
+            <ul class="list-disc list-inside space-y-2">
+                <li><span class="font-semibold text-orange-400">BJJ Training:</span> Monday PM and Saturday AM</li>
+                <li><span class="font-semibold text-orange-400">Important Note:</span> No hard strength or conditioning within 6 hours of BJJ</li>
+                <li><span class="font-semibold text-orange-400">Post-BJJ Recovery:</span> Use Yoga Nidra, cyclic sighing, or 528Hz to aid vagal recovery</li>
+            </ul>
+        </div>
+
+        <!-- TRS Weekly Timetable -->
+        <div class="mb-8 p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">TRS Weekly Timetable</div>
+            <p class="text-lg font-semibold mb-4">🎯 Theme: ADAPT. RECOVER. MASTER.</p>
+            <table class="timetable-table">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Focus</th>
+                        <th>Notes / Logic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Mon</td>
+                        <td>🥋 BJJ PM</td>
+                        <td>Red/yellow = skip extras. Optional mobility AM.</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Tue</td>
+                        <td>⚡ Q&D Tri-Lift #1</td>
+                        <td>Full dice protocol. Snatch/Viking → Pull-Up → Split Squat.</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Wed</td>
+                        <td>🧩 Accessory Day</td>
+                        <td>Big 3, Meel Lu, Poliquin Steps, low plyos. NSDR or breathwork to downshift.</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Thu</td>
+                        <td>🎲 Conditioning Day (Roll d6)</td>
+                        <td>Odds = Rope Flow 4x4; Evens = AXE 4x4. Keep nasal. Only do if green/yellow.</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Fri</td>
+                        <td>⚡ Q&D Tri-Lift #2</td>
+                        <td>Follow weekly load wave (Heavy → Lightest). Match dice volume again.</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Sat</td>
+                        <td>🥋 BJJ AM</td>
+                        <td>Optional low plyos or hangs after. Rest of day = recovery practices.</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-orange-400">Sun</td>
+                        <td>🧘 Recovery & Mobility</td>
+                        <td>NSDR / Yoga Nidra, squat rest, walk. Optional breath session + gut reset tools.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h3 class="font-bold text-xl text-orange-400 mt-6 mb-2">🧠 Overlay Rules</h3>
+            <ul class="list-disc list-inside ml-4 space-y-2">
+                <li><span class="font-bold text-red-500">❌ Red Day:</span> No Q&D or conditioning. Focus on breath, mobility, or walking.</li>
+                <li><span class="font-bold text-yellow-500">🟡 Yellow Day:</span>
+                    <ul class="list-circle list-inside ml-4">
+                        <li>Q&D → reduce load or use 5/4 only</li>
+                        <li>Conditioning → rope flow only</li>
+                        <li>Skip accessories if CNS taxed</li>
+                    </ul>
+                </li>
+                <li><span class="font-bold text-green-500">🟢 Green Day:</span> Full steam — go for it. Optional extras = game day mindset.</li>
+            </ul>
+        </div>
+
+        <!-- Traffic Light Recovery System - Details -->
+        <div class="p-6 bg-gray-900 rounded-lg shadow-md">
+            <div class="section-header">Traffic Light Recovery System - Details</div>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-bold text-xl text-green-500">Green Day:</h3>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Proceed with all planned training.</li>
+                        <li>Optional add-ons like breathwork, mobility, or skill flow.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-xl text-yellow-500">Yellow Day:</h3>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Reduce training volume (cut 1-2 sets or reduce RPE by 1).</li>
+                        <li>Prioritise nasal-only conditioning.</li>
+                        <li>Skip accessories if needed.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-xl text-red-500">Red Day:</h3>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>No intense training.</li>
+                        <li>Focus: Walking, mobility, breathwork, NSDR/Yoga Nidra.</li>
+                        <li>Consider squat rest, gut recovery if relevant.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const recoverySelect = document.getElementById('recoverySelect');
+        const recoveryStatusDisplay = document.getElementById('recoveryStatusDisplay');
+        const recoveryStatusText = document.getElementById('recoveryStatusText');
+        const getRecoveryTipBtn = document.getElementById('getRecoveryTipBtn'); // New button
+
+        // Strength Protocol Mode Toggles
+        const coreStrengthModeBtn = document.getElementById('coreStrengthModeBtn');
+        const qdProtocolModeBtn = document.getElementById('qdProtocolModeBtn');
+        const coreStrengthModeDiv = document.getElementById('coreStrengthMode');
+        const qdProtocolModeDiv = document.getElementById('qdProtocolMode');
+
+        // Core Strength Elements
+        const currentWeekDisplay = document.getElementById('currentWeekDisplay');
+        const loadTypeDisplay = document.getElementById('loadTypeDisplay');
+        const prevWeekBtn = document.getElementById('prevWeekBtn');
+        const nextWeekBtn = document.getElementById('nextWeekBtn');
+        const rollDiceBtn = document.getElementById('rollDiceBtn');
+        const diceRollResult = document.getElementById('diceRollResult');
+        const totalRepsDisplay = document.getElementById('totalRepsDisplay');
+        const strengthSessionDetails = document.getElementById('strengthSessionDetails');
+        const strengthWarning = document.getElementById('strengthWarning');
+        const coreStrengthSkippedMessage = document.getElementById('coreStrengthSkippedMessage');
+        const upperBodyReps = document.getElementById('upperBodyReps');
+        const pullReps = document.getElementById('pullReps');
+        const legsReps = document.getElementById('legsReps');
+
+        // Q&D Protocol Elements
+        const rollQDDiceBtn = document.getElementById('rollQDDiceBtn');
+        const qdDiceRollResult = document.getElementById('qdDiceRollResult');
+        const qdSeriesDisplay = document.getElementById('qdSeriesDisplay');
+        const qdTotalTimeDisplay = document.getElementById('qdTotalTimeDisplay');
+        const qdSessionDetails = document.getElementById('qdSessionDetails');
+        const qdStrengthWarning = document.getElementById('qdStrengthWarning');
+        const qdSkippedMessage = document.getElementById('qdSkippedMessage');
+
+        // Conditioning Elements
+        const conditioningOptions = document.getElementById('conditioningOptions');
+        const conditioningWarning = document.getElementById('conditioningWarning');
+        const conditioningSkippedMessage = document.getElementById('conditioningSkippedMessage');
+        const rollConditioningDiceBtn = document.getElementById('rollConditioningDiceBtn');
+        const conditioningDiceResult = document.getElementById('conditioningDiceResult');
+        const selectedConditioning = document.getElementById('selectedConditioning');
+
+
+        // Accessory Elements
+        const accessoryCheckboxes = document.querySelectorAll('input[name="accessory"]');
+        const accessoryWarning = document.getElementById('accessoryWarning');
+        const accessorySkippedMessage = document.getElementById('accessorySkippedMessage');
+
+        // Modal Elements
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+
+        // State Variables
+        let currentRecoveryStatus = localStorage.getItem('trsRecoveryStatus') || 'none';
+        let currentWeek = parseInt(localStorage.getItem('trsCurrentWeek')) || 1;
+        let totalReps = null; // For Core Strength
+        let currentTrainingMode = localStorage.getItem('trsTrainingMode') || 'core-strength'; // 'core-strength' or 'q-d-protocol'
+        let qdSeriesPerLift = null; // For Q&D Protocol
+        let qdTotalSessionTime = null; // For Q&D Protocol
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a custom modal message to the user.
+         * @param {string} message - The message to display.
+         */
+        function showModal(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex'; // Use flex to center
+        }
+
+        /**
+         * Closes the custom modal.
+         */
+        function closeModal() {
+            messageModal.style.display = 'none';
+        }
+
+        /**
+         * Updates the UI based on the current recovery status.
+         */
+        function updateRecoveryUI() {
+            // Update recovery status display
+            recoveryStatusDisplay.className = 'recovery-status-display'; // Reset classes
+            recoveryStatusText.textContent = ''; // Reset text
+
+            switch (currentRecoveryStatus) {
+                case 'green':
+                    recoveryStatusDisplay.classList.add('recovery-green');
+                    recoveryStatusDisplay.textContent = '🟢';
+                    recoveryStatusText.textContent = 'Recovery: GREEN - Full Steam Ahead!';
+                    break;
+                case 'yellow':
+                    recoveryStatusDisplay.classList.add('recovery-yellow');
+                    recoveryStatusDisplay.textContent = '🟡';
+                    recoveryStatusText.textContent = 'Recovery: YELLOW - Adjust & Prioritize!';
+                    break;
+                case 'red':
+                    recoveryStatusDisplay.classList.add('recovery-red');
+                    recoveryStatusDisplay.textContent = '🔴';
+                    recoveryStatusText.textContent = 'Recovery: RED - Rest & Recharge!';
+                    break;
+                default:
+                    recoveryStatusDisplay.classList.add('bg-gray-700');
+                    recoveryStatusDisplay.textContent = '?';
+                    recoveryStatusText.textContent = 'Select your recovery status.';
+                    break;
+            }
+
+            // Update select dropdown to reflect current state
+            recoverySelect.value = currentRecoveryStatus;
+        }
+
+        /**
+         * Updates the UI for the strength training section based on the selected mode.
+         */
+        function updateStrengthUI() {
+            // Reset all strength related messages and visibility
+            coreStrengthModeDiv.style.display = 'none';
+            qdProtocolModeDiv.style.display = 'none';
+            coreStrengthSkippedMessage.style.display = 'none';
+            qdSkippedMessage.style.display = 'none';
+            strengthSessionDetails.style.display = 'none';
+            qdSessionDetails.style.display = 'none';
+            strengthWarning.textContent = '';
+            qdStrengthWarning.textContent = '';
+
+            // Update toggle button active states
+            coreStrengthModeBtn.classList.remove('active');
+            qdProtocolModeBtn.classList.remove('active');
+
+            if (currentTrainingMode === 'core-strength') {
+                coreStrengthModeBtn.classList.add('active');
+                coreStrengthModeDiv.style.display = 'block';
+                updateCoreStrengthUI();
+            } else { // q-d-protocol
+                qdProtocolModeBtn.classList.add('active');
+                qdProtocolModeDiv.style.display = 'block';
+                updateQDProtocolUI();
+            }
+        }
+
+        /**
+         * Updates the UI specifically for the Core Strength training mode.
+         */
+        function updateCoreStrengthUI() {
+            if (currentRecoveryStatus === 'green' || currentRecoveryStatus === 'yellow') {
+                strengthSessionDetails.style.display = 'block';
+                if (currentRecoveryStatus === 'yellow') {
+                    strengthWarning.textContent = '🟡 Remember to Reduce Volume (cut 1-2 sets or reduce RPE by 1)!';
+                }
+            } else if (currentRecoveryStatus === 'red') {
+                coreStrengthSkippedMessage.style.display = 'block';
+            }
+
+            // Update load progression display
+            let loadText = '';
+            let loadPercentage = '';
+            switch (currentWeek) {
+                case 1:
+                    loadText = 'Heavy';
+                    loadPercentage = '~80% of 5RM';
+                    break;
+                case 2:
+                    loadText = 'Light';
+                    loadPercentage = '~60-70% of 5RM'; // Assuming light is lower
+                    break;
+                case 3:
+                    loadText = 'Heaviest';
+                    loadPercentage = '85–90% of 5RM';
+                    break;
+                case 4:
+                    loadText = 'Lightest';
+                    loadPercentage = '~50-60% of 5RM'; // Assuming lightest is even lower
+                    break;
+            }
+            currentWeekDisplay.textContent = `Week ${currentWeek}`;
+            loadTypeDisplay.textContent = `${loadText} (${loadPercentage})`;
+
+            // Update rep scheme examples based on totalReps
+            updateCoreStrengthRepSchemeExamples();
+        }
+
+        /**
+         * Updates the recommended set/rep schemes for Core Strength based on the calculated total reps.
+         */
+        function updateCoreStrengthRepSchemeExamples() {
+            const getRepSchemes = (reps) => {
+                let schemes = [];
+                if (reps === 40) {
+                    schemes = ['5 x 8', '4 x 10'];
+                } else if (reps === 60) {
+                    schemes = ['6 x 10', '5 x 12', '4 x 15'];
+                } else if (reps === 80) {
+                    schemes = ['8 x 10', '10 x 8', '5 x 16'];
+                } else if (reps === 100) {
+                    schemes = ['10 x 10', '5 x 20', '4 x 25'];
+                }
+                return schemes.map(s => `<li>${s}</li>`).join('');
+            };
+
+            if (totalReps !== null) {
+                upperBodyReps.innerHTML = getRepSchemes(totalReps);
+                pullReps.innerHTML = getRepSchemes(totalReps);
+                legsReps.innerHTML = getRepSchemes(totalReps);
+            } else {
+                upperBodyReps.innerHTML = '<li>Roll dice to determine reps.</li>';
+                pullReps.innerHTML = '<li>Roll dice to determine reps.</li>';
+                legsReps.innerHTML = '<li>Roll dice to determine reps.</li>';
+            }
+        }
+
+        /**
+         * Updates the UI specifically for the Q&D Protocol training mode.
+         */
+        function updateQDProtocolUI() {
+            if (currentRecoveryStatus === 'green' || currentRecoveryStatus === 'yellow') {
+                qdSessionDetails.style.display = 'block';
+                if (currentRecoveryStatus === 'yellow') {
+                    qdStrengthWarning.textContent = '🟡 Q&D: Reduce load or use 5/4 only!';
+                }
+            } else if (currentRecoveryStatus === 'red') {
+                qdSkippedMessage.style.display = 'block';
+            }
+
+            // Update Q&D specific displays
+            qdSeriesDisplay.textContent = qdSeriesPerLift !== null ? qdSeriesPerLift : 'N/A';
+            qdTotalTimeDisplay.textContent = qdTotalSessionTime !== null ? `~${qdTotalSessionTime} mins` : 'N/A';
+        }
+
+        /**
+         * Updates the UI for the conditioning section.
+         */
+        function updateConditioningUI() {
+            conditioningOptions.innerHTML = ''; // Clear previous options
+            conditioningWarning.textContent = '';
+            conditioningSkippedMessage.style.display = 'none';
+            selectedConditioning.textContent = 'N/A';
+            conditioningDiceResult.textContent = 'N/A';
+
+            if (currentRecoveryStatus === 'green' || currentRecoveryStatus === 'yellow') {
+                // No specific buttons here, as it's driven by dice roll
+                if (currentRecoveryStatus === 'yellow') {
+                    conditioningWarning.textContent = '🟡 Yellow Day: Rope Flow only (if dice roll allows)!';
+                }
+            } else if (currentRecoveryStatus === 'red') {
+                conditioningSkippedMessage.style.display = 'block';
+            }
+        }
+
+        /**
+         * Updates the UI for the accessory section.
+         */
+        function updateAccessoryUI() {
+            accessoryWarning.textContent = '';
+            accessorySkippedMessage.style.display = 'none';
+
+            accessoryCheckboxes.forEach(checkbox => {
+                checkbox.disabled = false; // Enable by default
+                checkbox.checked = false; // Uncheck them on status change
+            });
+
+            if (currentRecoveryStatus === 'red') {
+                accessoryCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = true;
+                });
+                accessorySkippedMessage.style.display = 'block';
+            } else if (currentRecoveryStatus === 'yellow') {
+                accessoryWarning.textContent = '🟡 Consider Skipping Accessories if Needed.';
+            }
+        }
+
+        /**
+         * Main function to update all sections of the dashboard.
+         */
+        function updateDashboard() {
+            updateRecoveryUI();
+            updateStrengthUI(); // This now handles both core strength and Q&D
+            updateConditioningUI();
+            updateAccessoryUI();
+        }
+
+        // --- Gemini API Integration ---
+
+        /**
+         * Fetches a recovery tip from the Gemini API based on the current recovery status.
+         */
+        async function getRecoveryTip() {
+            if (currentRecoveryStatus === 'none') {
+                showModal("Please select your daily recovery status first to get a tip.");
+                return;
+            }
+
+            let prompt = "";
+            switch (currentRecoveryStatus) {
+                case 'green':
+                    prompt = "Provide a brief, encouraging tip for a 'Green Day' in a training program focused on adaptation, recovery, and mastery. The tip should suggest optional add-ons or a 'game day mindset'.";
+                    break;
+                case 'yellow':
+                    prompt = "Provide a brief, actionable tip for a 'Yellow Day' in a training program. The tip should focus on reducing training volume, prioritizing nasal-only conditioning, or considering skipping accessories.";
+                    break;
+                case 'red':
+                    prompt = "Provide a brief, supportive tip for a 'Red Day' in a training program. The tip should emphasize rest, mobility, breathwork, NSDR/Yoga Nidra, squat rest, or gut recovery.";
+                    break;
+            }
+
+            showModal("Fetching recovery tip... Please wait."); // Loading indicator
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = "" // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    showModal(`Recovery Tip: ${text}`);
+                } else {
+                    showModal("Failed to get a recovery tip. Please try again.");
+                }
+            } catch (error) {
+                console.error("Error fetching recovery tip:", error);
+                showModal("An error occurred while fetching the recovery tip. Please check your network connection.");
+            }
+        }
+
+        // --- Event Listeners ---
+
+        // Recovery status selection
+        recoverySelect.addEventListener('change', (event) => {
+            currentRecoveryStatus = event.target.value;
+            localStorage.setItem('trsRecoveryStatus', currentRecoveryStatus);
+            updateDashboard();
+        });
+
+        // Get Recovery Tip button
+        getRecoveryTipBtn.addEventListener('click', getRecoveryTip);
+
+
+        // Toggle training modes
+        coreStrengthModeBtn.addEventListener('click', () => {
+            currentTrainingMode = 'core-strength';
+            localStorage.setItem('trsTrainingMode', currentTrainingMode);
+            updateStrengthUI();
+        });
+
+        qdProtocolModeBtn.addEventListener('click', () => {
+            currentTrainingMode = 'q-d-protocol';
+            localStorage.setItem('trsTrainingMode', currentTrainingMode);
+            updateStrengthUI();
+        });
+
+        // Core Strength: Dice roll for strength reps
+        rollDiceBtn.addEventListener('click', () => {
+            if (currentRecoveryStatus === 'red' || currentRecoveryStatus === 'none') {
+                showModal("Please select a Green or Yellow recovery status to roll the dice for strength training.");
+                return;
+            }
+            const roll = Math.floor(Math.random() * 6) + 1;
+            diceRollResult.textContent = roll;
+
+            if (roll === 1) {
+                totalReps = 40;
+            } else if (roll >= 2 && roll <= 3) {
+                totalReps = 60;
+            } else if (roll >= 4 && roll <= 5) {
+                totalReps = 80;
+            } else { // roll === 6
+                totalReps = 100;
+            }
+            totalRepsDisplay.textContent = totalReps;
+            updateCoreStrengthRepSchemeExamples(); // Update rep schemes immediately after rolling
+        });
+
+        // Core Strength: Week navigation
+        prevWeekBtn.addEventListener('click', () => {
+            currentWeek = currentWeek > 1 ? currentWeek - 1 : 4; // Cycle back to 4 if at 1
+            localStorage.setItem('trsCurrentWeek', currentWeek);
+            updateCoreStrengthUI(); // Only update core strength UI
+        });
+
+        nextWeekBtn.addEventListener('click', () => {
+            currentWeek = currentWeek < 4 ? currentWeek + 1 : 1; // Cycle to 1 if at 4
+            localStorage.setItem('trsCurrentWeek', currentWeek);
+            updateCoreStrengthUI(); // Only update core strength UI
+        });
+
+        // Q&D Protocol: Dice roll for Q&D volume
+        rollQDDiceBtn.addEventListener('click', () => {
+            if (currentRecoveryStatus === 'red' || currentRecoveryStatus === 'none') {
+                showModal("Please select a Green or Yellow recovery status to roll the dice for Q&D Tri-Lift Protocol.");
+                return;
+            }
+            const roll = Math.floor(Math.random() * 6) + 1;
+            qdDiceRollResult.textContent = roll;
+
+            if (roll === 1) {
+                qdSeriesPerLift = 2;
+                qdTotalSessionTime = 20;
+            } else if (roll >= 2 && roll <= 3) {
+                qdSeriesPerLift = 3;
+                qdTotalSessionTime = 30;
+            } else if (roll >= 4 && roll <= 5) {
+                qdSeriesPerLift = 4;
+                qdTotalSessionTime = 40;
+            } else { // roll === 6
+                qdSeriesPerLift = 5;
+                qdTotalSessionTime = 50;
+            }
+            updateQDProtocolUI(); // Update Q&D displays
+            showModal(`Q&D Dice Rolled: ${roll}. You will perform ${qdSeriesPerLift} series per lift, for an approximate total session time of ${qdTotalSessionTime} minutes.`);
+        });
+
+        // Conditioning: Dice roll for Rope vs. AXE
+        rollConditioningDiceBtn.addEventListener('click', () => {
+            if (currentRecoveryStatus === 'red' || currentRecoveryStatus === 'none') {
+                showModal("Please select a Green or Yellow recovery status to roll the dice for conditioning.");
+                return;
+            }
+            const roll = Math.floor(Math.random() * 6) + 1;
+            conditioningDiceResult.textContent = roll;
+
+            let conditioningType;
+            if (roll % 2 !== 0) { // Odd roll
+                conditioningType = 'Rope Flow 4x4 (Nasal Breathing)';
+            } else { // Even roll
+                conditioningType = 'AXE 4x4 (Power Output)';
+            }
+
+            // Apply Yellow Day rule
+            if (currentRecoveryStatus === 'yellow' && conditioningType.includes('AXE')) {
+                conditioningType = 'Rope Flow 4x4 (Nasal Breathing) - Yellow Day Override';
+                showModal(`Dice rolled ${roll} (AXE), but on a Yellow Day, you prioritize Rope Flow. Performing Rope Flow 4x4.`);
+            } else {
+                showModal(`Dice rolled ${roll}. Today's Conditioning: ${conditioningType}.`);
+            }
+            selectedConditioning.textContent = conditioningType;
+        });
+
+        // Initial load
+        window.onload = () => {
+            updateDashboard();
+        };
+    </script>
+</body>
+</html>
